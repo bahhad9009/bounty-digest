@@ -41,10 +41,13 @@ def is_relevant(title, summary):
 
 def fetch_text(url):
     try:
-        downloaded = trafilatura.fetch_url(url)
+        headers = {"User-Agent": "Mozilla/5.0"}
+        r = requests.get(url, headers=headers, timeout=15)
+        downloaded = r.text
         text = trafilatura.extract(downloaded)
         return text[:4000] if text else None
-    except:
+    except Exception as e:
+        print("Fetch error:", e)
         return None
 
 def call_groq(prompt):
