@@ -4,7 +4,6 @@ import feedparser
 import requests
 import trafilatura
 from datetime import datetime, timedelta
-from groq import Groq
 
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
@@ -62,7 +61,6 @@ def fetch_article_text(url):
         return None
 
 def summarize(title, text):
-    client = Groq(api_key=GROQ_API_KEY)
     prompt = f"""You are a bug bounty learning assistant. Summarize this writeup in a structured way.
 
 Title: {title}
@@ -88,13 +86,22 @@ IMPACT: [one sentence]
 
 KEY LESSON: [one actionable tip for bug hunters]"""
 
-    response = client.chat.completions.create(
-        model="llama3-70b-8192",
-        messages=[{"role": "user", "content": prompt}],
-        max_tokens=500,
-        temperature=0.3,
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "llama3-70b-8192",
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 500,
+            "temperature": 0.3,
+        },
+        timeout=30,
     )
-    return response.choices[0].message.content.strip()
+    data = response.json()
+    return data["choices"][0]["message"]["content"].strip()
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
